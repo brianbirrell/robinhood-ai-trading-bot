@@ -1,11 +1,11 @@
 from openai import OpenAI
 import re
 import json
-from config import OPENAI_API_KEY, OPENAI_MODEL_NAME
+from config import OPENAI_API_KEY, OPENAI_API_BASE, OPENAI_MODEL_NAME
 
 
 # Initialize OpenAI client
-client = OpenAI(api_key=OPENAI_API_KEY)
+client = OpenAI(api_key=OPENAI_API_KEY, base_url=OPENAI_API_BASE)
 
 
 # Make AI request to OpenAI API
