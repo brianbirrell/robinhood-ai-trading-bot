@@ -1,4 +1,4 @@
-from onepassword.client import Client
+from onepassword import OnePassword
 from config import OP_SERVICE_ACCOUNT_NAME, OP_SERVICE_ACCOUNT_TOKEN, OP_VAULT_NAME, OP_ITEM_NAME
 from ..utils import logger
 
@@ -7,7 +7,7 @@ from ..utils import logger
 async def get_mfa_code_from_1password():
     try:
         logger.debug("Attempting to login to 1Password to get MFA code...")
-        onePasswordClient = await Client.authenticate(
+        onePasswordClient = OnePassword(
             auth=OP_SERVICE_ACCOUNT_TOKEN,
             integration_name=OP_SERVICE_ACCOUNT_NAME,
             integration_version="v1.0.0",

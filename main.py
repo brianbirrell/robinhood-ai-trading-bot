@@ -4,8 +4,8 @@ import json
 import asyncio
 
 from config import *
-from src.api import robinhood
-from src.api import openai
+from src.api import robinhood_client
+from src.api import openai_client
 from src.utils import logger
 
 
@@ -70,9 +70,9 @@ def make_ai_decisions(account_info, portfolio_overview, watchlist_overview):
         "- Return an empty array if no actions are necessary."
     )
     logger.debug(f"AI making-decisions prompt:{chr(10)}{ai_prompt}")
-    ai_response = openai.make_ai_request(ai_prompt)
+    ai_response = openai_client.make_ai_request(ai_prompt)
     logger.debug(f"AI making-decisions response:{chr(10)}{ai_response.choices[0].message.content.strip()}")
-    decisions = openai.parse_ai_response(ai_response)
+    decisions = openai_client.parse_ai_response(ai_response)
     return decisions
 
 
@@ -147,10 +147,10 @@ def limit_watchlist_stocks(watchlist_stocks, limit):
 # Main trading bot function
 def trading_bot():
     logger.info("Getting account info...")
-    account_info = robinhood.get_account_info()
+    account_info = robinhood_client.get_account_info()
 
     logger.info("Getting portfolio stocks...")
-    portfolio_stocks = robinhood.get_portfolio_stocks()
+    portfolio_stocks = robinhood_client.get_portfolio_stocks()
 
     logger.debug(f"Portfolio stocks total: {len(portfolio_stocks)}")
 
@@ -163,21 +163,21 @@ def trading_bot():
     logger.info("Prepare portfolio stocks for AI analysis...")
     portfolio_overview = {}
     for symbol, stock_data in portfolio_stocks.items():
-        historical_data_day = robinhood.get_historical_data(symbol, interval="5minute", span="day")
-        historical_data_year = robinhood.get_historical_data(symbol, interval="day", span="year")
-        ratings_data = robinhood.get_ratings(symbol)
-        portfolio_overview[symbol] = robinhood.extract_my_stocks_data(stock_data)
-        portfolio_overview[symbol] = robinhood.enrich_with_rsi(portfolio_overview[symbol], historical_data_day, symbol)
-        portfolio_overview[symbol] = robinhood.enrich_with_vwap(portfolio_overview[symbol], historical_data_day, symbol)
-        portfolio_overview[symbol] = robinhood.enrich_with_moving_averages(portfolio_overview[symbol], historical_data_year, symbol)
-        portfolio_overview[symbol] = robinhood.enrich_with_analyst_ratings(portfolio_overview[symbol], ratings_data)
-        portfolio_overview[symbol] = robinhood.enrich_with_pdt_restrictions(portfolio_overview[symbol], symbol)
+        historical_data_day = robinhood_client.get_historical_data(symbol, interval="5minute", span="day")
+        historical_data_year = robinhood_client.get_historical_data(symbol, interval="day", span="year")
+        ratings_data = robinhood_client.get_ratings(symbol)
+        portfolio_overview[symbol] = robinhood_client.extract_my_stocks_data(stock_data)
+        portfolio_overview[symbol] = robinhood_client.enrich_with_rsi(portfolio_overview[symbol], historical_data_day, symbol)
+        portfolio_overview[symbol] = robinhood_client.enrich_with_vwap(portfolio_overview[symbol], historical_data_day, symbol)
+        portfolio_overview[symbol] = robinhood_client.enrich_with_moving_averages(portfolio_overview[symbol], historical_data_year, symbol)
+        portfolio_overview[symbol] = robinhood_client.enrich_with_analyst_ratings(portfolio_overview[symbol], ratings_data)
+        portfolio_overview[symbol] = robinhood_client.enrich_with_pdt_restrictions(portfolio_overview[symbol], symbol)
 
     logger.info("Getting watchlist stocks...")
     watchlist_stocks = []
     for watchlist_name in WATCHLIST_NAMES:
         try:
-            watchlist_stocks.extend(robinhood.get_watchlist_stocks(watchlist_name))
+            watchlist_stocks.extend(robinhood_client.get_watchlist_stocks(watchlist_name))
             watchlist_stocks = [dict(t) for t in {tuple(d.items()) for d in watchlist_stocks}]
         except Exception as e:
             logger.error(f"Error getting watchlist stocks for {watchlist_name}: {e}")
@@ -197,15 +197,15 @@ def trading_bot():
         logger.info("Prepare watchlist overview for AI analysis...")
         for stock_data in watchlist_stocks:
             symbol = stock_data['symbol']
-            historical_data_day = robinhood.get_historical_data(symbol, interval="5minute", span="day")
-            historical_data_year = robinhood.get_historical_data(symbol, interval="day", span="year")
-            ratings_data = robinhood.get_ratings(symbol)
-            watchlist_overview[symbol] = robinhood.extract_watchlist_data(stock_data)
-            watchlist_overview[symbol] = robinhood.enrich_with_rsi(watchlist_overview[symbol], historical_data_day, symbol)
-            watchlist_overview[symbol] = robinhood.enrich_with_vwap(watchlist_overview[symbol], historical_data_day, symbol)
-            watchlist_overview[symbol] = robinhood.enrich_with_moving_averages(watchlist_overview[symbol], historical_data_year, symbol)
-            watchlist_overview[symbol] = robinhood.enrich_with_analyst_ratings(watchlist_overview[symbol], ratings_data)
-            watchlist_overview[symbol] = robinhood.enrich_with_pdt_restrictions(watchlist_overview[symbol], symbol)
+            historical_data_day = robinhood_client.get_historical_data(symbol, interval="5minute", span="day")
+            historical_data_year = robinhood_client.get_historical_data(symbol, interval="day", span="year")
+            ratings_data = robinhood_client.get_ratings(symbol)
+            watchlist_overview[symbol] = robinhood_client.extract_watchlist_data(stock_data)
+            watchlist_overview[symbol] = robinhood_client.enrich_with_rsi(watchlist_overview[symbol], historical_data_day, symbol)
+            watchlist_overview[symbol] = robinhood_client.enrich_with_vwap(watchlist_overview[symbol], historical_data_day, symbol)
+            watchlist_overview[symbol] = robinhood_client.enrich_with_moving_averages(watchlist_overview[symbol], historical_data_year, symbol)
+            watchlist_overview[symbol] = robinhood_client.enrich_with_analyst_ratings(watchlist_overview[symbol], ratings_data)
+            watchlist_overview[symbol] = robinhood_client.enrich_with_pdt_restrictions(watchlist_overview[symbol], symbol)
 
     if len(portfolio_overview) == 0 and len(watchlist_overview) == 0:
         logger.warning("No stocks to analyze, skipping AI-based decision-making...")
@@ -237,7 +237,7 @@ def trading_bot():
 
         if decision == "sell":
             try:
-                sell_resp = robinhood.sell_stock(symbol, quantity)
+                sell_resp = robinhood_client.sell_stock(symbol, quantity)
                 if sell_resp and 'id' in sell_resp:
                     if sell_resp['id'] == "demo":
                         trading_results[symbol] = {"symbol": symbol, "quantity": quantity, "decision": "sell", "result": "success", "details": "Demo mode"}
@@ -246,7 +246,7 @@ def trading_bot():
                         trading_results[symbol] = {"symbol": symbol, "quantity": quantity, "decision": "sell", "result": "cancelled", "details": "Cancelled by user"}
                         logger.info(f"{symbol} > Sell cancelled by user")
                     else:
-                        details = robinhood.extract_sell_response_data(sell_resp)
+                        details = robinhood_client.extract_sell_response_data(sell_resp)
                         trading_results[symbol] = {"symbol": symbol, "quantity": quantity, "decision": "sell", "result": "success", "details": details}
                         logger.info(f"{symbol} > Sold {quantity} stocks")
                 else:
@@ -259,7 +259,7 @@ def trading_bot():
 
         if decision == "buy":
             try:
-                buy_resp = robinhood.buy_stock(symbol, quantity)
+                buy_resp = robinhood_client.buy_stock(symbol, quantity)
                 if buy_resp and 'id' in buy_resp:
                     if buy_resp['id'] == "demo":
                         trading_results[symbol] = {"symbol": symbol, "quantity": quantity, "decision": "buy", "result": "success", "details": "Demo mode"}
@@ -268,7 +268,7 @@ def trading_bot():
                         trading_results[symbol] = {"symbol": symbol, "quantity": quantity, "decision": "buy", "result": "cancelled", "details": "Cancelled by user"}
                         logger.info(f"{symbol} > Buy cancelled by user")
                     else:
-                        details = robinhood.extract_buy_response_data(buy_resp)
+                        details = robinhood_client.extract_buy_response_data(buy_resp)
                         trading_results[symbol] = {"symbol": symbol, "quantity": quantity, "decision": "buy", "result": "success", "details": details}
                         logger.info(f"{symbol} > Bought {quantity} stocks")
                 else:
@@ -291,13 +291,13 @@ async def main():
             # Check if Robinhood token needs refresh (refresh 5 minutes before expiry)
             if time.time() >= robinhood_token_expiry - 300:
                 logger.info("Login to Robinhood...")
-                login_resp = await robinhood.login_to_robinhood()
+                login_resp = await robinhood_client.login_to_robinhood()
                 if not login_resp or 'expires_in' not in login_resp:
                     raise Exception("Failed to login to Robinhood")
                 robinhood_token_expiry = time.time() + login_resp['expires_in']
                 logger.info(f"Successfully logged in. Token expires in {login_resp['expires_in']} seconds")
 
-            if robinhood.is_market_open():
+            if robinhood_client.is_market_open():
                 run_interval_seconds = RUN_INTERVAL_SECONDS
                 logger.info(f"Market is open, running trading bot in {MODE} mode...")
 

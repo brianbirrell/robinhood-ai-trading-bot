@@ -5,7 +5,7 @@ from datetime import datetime
 from pytz import timezone
 import pandas as pd
 
-from . import onepassword
+from . import onepassword_client
 from ..utils import auth
 from ..utils import logger
 from config import MODE, ROBINHOOD_USERNAME, ROBINHOOD_PASSWORD, ROBINHOOD_MFA_PROMPT
@@ -41,7 +41,7 @@ async def login_to_robinhood():
 
         # If no MFA secret, try 1Password
         if not mfa_code and OP_SERVICE_ACCOUNT_NAME and OP_SERVICE_ACCOUNT_TOKEN and OP_VAULT_NAME and OP_ITEM_NAME:
-            mfa_code = await onepassword.get_mfa_code_from_1password()
+            mfa_code = await onepassword_client.get_mfa_code_from_1password()
 
         # If still no MFA code and prompt is enabled, ask user for input
         if not mfa_code and ROBINHOOD_MFA_PROMPT:
