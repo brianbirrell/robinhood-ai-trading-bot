@@ -8,10 +8,30 @@ import pandas as pd
 from . import onepassword
 from ..utils import auth
 from ..utils import logger
-from config import MODE, ROBINHOOD_USERNAME, ROBINHOOD_PASSWORD
+from config import MODE, ROBINHOOD_USERNAME, ROBINHOOD_PASSWORD, ROBINHOOD_MFA_PROMPT
 from config import OP_SERVICE_ACCOUNT_NAME, OP_SERVICE_ACCOUNT_TOKEN, OP_VAULT_NAME, OP_ITEM_NAME
 
 account_info_cache = {}
+
+
+# Prompt for MFA token on command line
+def get_mfa_code_from_prompt():
+    """Prompt user for MFA token on command line"""
+    try:
+        mfa_code = input("Enter your Robinhood MFA token: ").strip()
+        if mfa_code:
+            logger.debug(f"Received MFA code from user input: {mfa_code}")
+            return mfa_code
+        else:
+            logger.warning("Empty MFA code provided by user")
+            return None
+    except (EOFError, KeyboardInterrupt):
+        logger.warning("MFA input was interrupted or cancelled")
+        return None
+    except Exception as e:
+        logger.error(f"Error getting MFA code from user input: {e}")
+        return None
+
 
 # Main login function that orchestrates the login process
 async def login_to_robinhood():
@@ -22,6 +42,10 @@ async def login_to_robinhood():
         # If no MFA secret, try 1Password
         if not mfa_code and OP_SERVICE_ACCOUNT_NAME and OP_SERVICE_ACCOUNT_TOKEN and OP_VAULT_NAME and OP_ITEM_NAME:
             mfa_code = await onepassword.get_mfa_code_from_1password()
+
+        # If still no MFA code and prompt is enabled, ask user for input
+        if not mfa_code and ROBINHOOD_MFA_PROMPT:
+            mfa_code = get_mfa_code_from_prompt()
 
         try:
             if mfa_code:
