@@ -238,6 +238,7 @@ OPENAI_API_KEY = "..."                      # OpenAI API key
 ROBINHOOD_USERNAME = "..."                  # Robinhood username
 ROBINHOOD_PASSWORD = "..."                  # Robinhood password
 ROBINHOOD_MFA_SECRET = ""                   # Robinhood MFA secret (if enabled)
+ROBINHOOD_MFA_PROMPT = False                # Prompt for MFA token on command line (true/false)
 
 # Basic config parameters
 MODE = "demo"                               # Trading mode (demo, auto, manual)
@@ -259,7 +260,7 @@ OPENAI_MODEL_NAME = "gpt-4o-mini"           # OpenAI model name
 ```
 
 #### Robinhood MFA Setup
-If MFA is enabled, you'll need to provide an MFA code. There are two options:
+If MFA is enabled, you'll need to provide an MFA code. There are three options:
 
 ##### Option 1: Use `ROBINHOOD_MFA_SECRET` (Local MFA Code)
 If you prefer to set the MFA secret directly, follow these steps:
@@ -286,6 +287,14 @@ To use this feature:
 3. The script will automatically fetch the MFA secret from 1Password if `ROBINHOOD_MFA_SECRET` is not provided.
 
 For more information on setting up 1Password Service Accounts, read the guide: [Get started with 1Password Service Accounts](https://developer.1password.com/docs/service-accounts/get-started/)
+
+##### Option 3: Use MFA Prompt (Interactive Input)
+If you prefer to manually enter your MFA code each time the bot runs, you can enable the interactive prompt:
+1. Set `ROBINHOOD_MFA_PROMPT = True` in your `config.py` file.
+2. When the bot starts and MFA is required, it will prompt you to enter your MFA token on the command line.
+3. Enter the 6-digit code from your authenticator app when prompted.
+
+This option is useful if you want to keep your MFA secret secure and not store it in configuration files, or if you prefer to manually control when MFA codes are generated.
 
 ### Running the Bot
 Start the bot with:
