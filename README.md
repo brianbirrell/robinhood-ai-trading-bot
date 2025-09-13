@@ -213,7 +213,13 @@ Are you sure you want to run the bot in auto mode? (yes/no): yes
     cd robinhood-ai-trading-bot
     ```
 
-2. Install dependencies:
+2. Create and activate a Python virtual environment:
+    ```sh
+    python -m venv .venv
+    source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+    ```
+
+3. Install dependencies:
     ```sh
     pip install -r requirements.txt
     ```
