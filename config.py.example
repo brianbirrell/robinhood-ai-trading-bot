@@ -27,5 +27,5 @@ MIN_BUYING_AMOUNT_USD = 1.0                 # Minimum buy amount in USD (False -
 MAX_BUYING_AMOUNT_USD = 10.0                # Maximum buy amount in USD (False - disable setting)
 
 # OpenAI config params
-OPENAI_API_BASE = "https://api.openai.com/v1"  # OpenAI API base URL (e.g., "http://localhost:11434")
+OPENAI_API_BASE = "https://api.openai.com/v1"  # OpenAI API base URL (e.g., Ollama "http://localhost:11434/v1")
 OPENAI_MODEL_NAME = "gpt-4o-mini"           # OpenAI model name

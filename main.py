@@ -297,9 +297,14 @@ async def main():
                 robinhood_token_expiry = time.time() + login_resp['expires_in']
                 logger.info(f"Successfully logged in. Token expires in {login_resp['expires_in']} seconds")
 
-            if robinhood_client.is_market_open():
+            if MODE == "demo" or robinhood_client.is_market_open():
                 run_interval_seconds = RUN_INTERVAL_SECONDS
-                logger.info(f"Market is open, running trading bot in {MODE} mode...")
+                if( robinhood_client.is_market_open() ):
+                    logger.info(f"Market is open...")
+                else:
+                    logger.info(f"Market is closed...")
+
+                logger.info(f"Running trading bot in {MODE} mode...")
 
                 trading_results = trading_bot()
 
