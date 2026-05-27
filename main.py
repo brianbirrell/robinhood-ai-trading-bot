@@ -2,11 +2,36 @@ import time
 from datetime import datetime
 import json
 import asyncio
+import os
 
 from config import *
 from src.api import robinhood_client
 from src.api import openai_client
 from src.utils import logger
+
+AUTO_MODE_CONFIRM_ENV = "AUTO_MODE_CONFIRM"
+
+
+def is_running_in_container():
+    if os.path.exists("/.dockerenv"):
+        return True
+
+    cgroup_paths = ["/proc/1/cgroup", "/proc/self/cgroup"]
+    for cgroup_path in cgroup_paths:
+        try:
+            with open(cgroup_path, "r", encoding="utf-8") as f:
+                cgroup_data = f.read()
+            if "docker" in cgroup_data or "containerd" in cgroup_data or "kubepods" in cgroup_data:
+                return True
+        except OSError:
+            continue
+
+    return False
+
+
+def is_auto_mode_confirmed():
+    confirm_value = os.getenv(AUTO_MODE_CONFIRM_ENV, "").strip().lower()
+    return confirm_value in ["1", "true", "yes"]
 
 
 def format_value(value, decimals=2):
@@ -455,10 +480,24 @@ async def main():
 
 # Run the main function
 if __name__ == '__main__':
-    if MODE != "demo":
+    in_container = is_running_in_container()
+
+    if MODE == "manual" and in_container:
+        logger.error("Manual mode is not supported when running inside a container.")
+        exit(1)
+
+    if MODE == "auto" and in_container:
+        if not is_auto_mode_confirmed():
+            logger.error(
+                "Auto mode in container requires explicit acknowledgment. "
+                f"Set {AUTO_MODE_CONFIRM_ENV}=yes to continue."
+            )
+            exit(1)
+    elif MODE != "demo":
         confirm = input(f"Are you sure you want to run the bot in {MODE} mode? (yes/no): ")
         if confirm.lower() != "yes":
             logger.warning("Exiting the bot...")
             exit()
+
     asyncio.run(main())
 

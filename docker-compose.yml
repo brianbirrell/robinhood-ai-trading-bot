@@ -5,6 +5,8 @@ services:
       dockerfile: Dockerfile
     image: robinhood-ai-trading-bot:latest
     container_name: robinhood-ai-trading-bot
+    environment:
+      AUTO_MODE_CONFIRM: "no"
     volumes:
       - ./config.py:/app/config.py:ro
     stdin_open: true

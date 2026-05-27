@@ -308,6 +308,45 @@ Start the bot with:
    python main.py
    ```
 
+### Running in Docker
+When running in Docker (including Docker Compose), `MODE = "manual"` is not supported and the app will exit at startup.
+
+For `MODE = "auto"` in Docker, you must explicitly acknowledge non-interactive execution by setting:
+`AUTO_MODE_CONFIRM=yes`
+
+Use `MODE = "demo"` or `MODE = "auto"` in `config.py` for container-based runs.
+
+Build the image:
+```sh
+docker build -t robinhood-ai-trading-bot:latest .
+```
+
+Run with `docker run` (demo mode):
+```sh
+docker run --rm -it \
+    -v "$PWD/config.py:/app/config.py:ro" \
+    robinhood-ai-trading-bot:latest
+```
+
+Run with `docker run` (auto mode):
+```sh
+docker run --rm -it \
+    -e AUTO_MODE_CONFIRM=yes \
+    -v "$PWD/config.py:/app/config.py:ro" \
+    robinhood-ai-trading-bot:latest
+```
+
+Run with Docker Compose:
+```sh
+docker compose up --build
+```
+
+For auto mode with Docker Compose, set this in `docker-compose.yml`:
+```yaml
+environment:
+    AUTO_MODE_CONFIRM: "yes"
+```
+
 ## ⚠️ Disclaimer
 Please note: This bot is designed solely for educational purposes.
 Trading stocks involves significant risks, and you should only invest money you can afford to lose.
