@@ -1,0 +1,11 @@
+services:
+  robinhood-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: robinhood-ai-trading-bot:latest
+    container_name: robinhood-ai-trading-bot
+    volumes:
+      - ./config.py:/app/config.py:ro
+    stdin_open: true
+    tty: true
