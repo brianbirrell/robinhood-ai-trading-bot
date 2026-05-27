@@ -15,6 +15,7 @@ ROBINHOOD_MFA_PROMPT = False                # Prompt for MFA token on command li
 MODE = "demo"                               # Trading mode (demo, auto, manual)
 LOG_LEVEL = "INFO"                          # Log level (DEBUG, INFO, WARNING, ERROR)
 RUN_INTERVAL_SECONDS = 600                  # Trading interval in seconds (if the market is open)
+DECISION_SUMMARY = False                    # Print a factual 2-3 sentence summary for each buy/sell/hold decision (true/false)
 
 # Robinhood config parameters
 TRADE_EXCEPTIONS = []                       # List of stocks to exclude from trading (e.g. ["AAPL", "TSLA", "AMZN"])

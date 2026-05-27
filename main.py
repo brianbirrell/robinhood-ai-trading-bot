@@ -9,6 +9,131 @@ from src.api import openai_client
 from src.utils import logger
 
 
+def format_value(value, decimals=2):
+    if value is None:
+        return "n/a"
+    try:
+        return f"{float(value):.{decimals}f}"
+    except (TypeError, ValueError):
+        return str(value)
+
+
+def build_analyst_summary_text(analyst_summary):
+    if not isinstance(analyst_summary, dict):
+        return "Analyst summary is not available"
+
+    buy_count = analyst_summary.get("num_buy_ratings")
+    hold_count = analyst_summary.get("num_hold_ratings")
+    sell_count = analyst_summary.get("num_sell_ratings")
+    return (
+        "Analyst ratings counts are "
+        f"buy={format_value(buy_count, 0)}, hold={format_value(hold_count, 0)}, sell={format_value(sell_count, 0)}"
+    )
+
+
+def build_technical_impact_text(current_price_raw, rsi, vwap, mavg_50, mavg_200):
+    impacts = []
+    if rsi is not None:
+        try:
+            rsi_val = float(rsi)
+            if rsi_val >= 70:
+                impacts.append(f"RSI of {format_value(rsi)} indicates overbought conditions (sell pressure)")
+            elif rsi_val <= 30:
+                impacts.append(f"RSI of {format_value(rsi)} indicates oversold conditions (buy pressure)")
+            else:
+                side = "above" if rsi_val >= 50 else "below"
+                impacts.append(f"RSI of {format_value(rsi)} is {side} the neutral 50 threshold")
+        except (TypeError, ValueError):
+            pass
+    if vwap is not None and current_price_raw is not None:
+        try:
+            price_val = float(current_price_raw)
+            vwap_val = float(vwap)
+            rel = "above" if price_val > vwap_val else "below"
+            implication = "suggesting overvaluation" if price_val > vwap_val else "suggesting undervaluation"
+            impacts.append(
+                f"price of {format_value(current_price_raw)} USD is {rel} VWAP of {format_value(vwap)} USD {implication}"
+            )
+        except (TypeError, ValueError):
+            pass
+    if mavg_50 is not None and mavg_200 is not None:
+        try:
+            m50 = float(mavg_50)
+            m200 = float(mavg_200)
+            cross = "golden cross (bullish)" if m50 > m200 else "death cross (bearish)"
+            impacts.append(
+                f"50d MA of {format_value(mavg_50)} USD vs 200d MA of {format_value(mavg_200)} USD forms a {cross}"
+            )
+        except (TypeError, ValueError):
+            pass
+    if impacts:
+        return "Technical signal interpretation: " + "; ".join(impacts) + "."
+    return None
+
+
+def build_decision_summary(symbol, decision_data, stock_data):
+    decision = str(decision_data.get("decision", "hold")).lower()
+    quantity = format_value(decision_data.get("quantity", 0), 6)
+    current_price_raw = stock_data.get("current_price")
+    current_price = format_value(current_price_raw)
+    average_buy_price = format_value(stock_data.get("my_average_buy_price"))
+
+    sentence_1 = (
+        f"{symbol}: {decision} {quantity} shares @ {current_price} USD (avg buy: {average_buy_price} USD)."
+    )
+
+    rsi = stock_data.get("rsi")
+    vwap = stock_data.get("vwap")
+    mavg_50 = stock_data.get("50_day_mavg_price")
+    mavg_200 = stock_data.get("200_day_mavg_price")
+
+    technical_parts = []
+    if rsi is not None:
+        technical_parts.append(f"RSI={format_value(rsi)}")
+    if vwap is not None:
+        technical_parts.append(f"VWAP={format_value(vwap)} USD")
+    if mavg_50 is not None:
+        technical_parts.append(f"50d MA={format_value(mavg_50)} USD")
+    if mavg_200 is not None:
+        technical_parts.append(f"200d MA={format_value(mavg_200)} USD")
+
+    if technical_parts:
+        sentence_2 = "Technical inputs used: " + ", ".join(technical_parts) + "."
+    else:
+        sentence_2 = "Technical inputs used: RSI, VWAP, and moving averages were not available in this run."
+
+    impact_text = build_technical_impact_text(current_price_raw, rsi, vwap, mavg_50, mavg_200)
+    sentence_2b = impact_text if impact_text else "No technical signal interpretation could be derived from available data."
+
+    analyst_summary_text = build_analyst_summary_text(stock_data.get("analyst_summary"))
+    buy_pdt = stock_data.get("is_buy_pdt_restricted")
+    sell_pdt = stock_data.get("is_sell_pdt_restricted")
+    sentence_3 = (
+        f"{analyst_summary_text}; PDT restrictions are buy={format_value(buy_pdt)} and "
+        f"sell={format_value(sell_pdt)}."
+    )
+
+    return f"{sentence_1} {sentence_2} {sentence_2b} {sentence_3}"
+
+
+def log_decision_summaries(decisions_data, portfolio_overview, watchlist_overview):
+    logger.info("Decision summaries (factual and data-grounded):")
+    for decision_data in decisions_data:
+        symbol = decision_data.get("symbol")
+        if not symbol:
+            continue
+
+        stock_data = portfolio_overview.get(symbol) or watchlist_overview.get(symbol)
+        if not stock_data:
+            logger.info(
+                f"{symbol} > Summary unavailable: no stock data found in portfolio/watchlist overviews for this run."
+            )
+            continue
+
+        summary = build_decision_summary(symbol, decision_data, stock_data)
+        logger.info(f"{symbol} > Summary: {summary}")
+
+
 # Get AI amount guidelines
 def get_ai_amount_guidelines():
     sell_guidelines = []
@@ -222,6 +347,9 @@ def trading_bot():
 
     logger.info("Filtering AI hallucinations...")
     decisions_data = filter_ai_hallucinations(account_info, portfolio_overview, watchlist_overview, decisions_data)
+
+    if DECISION_SUMMARY and len(decisions_data) > 0:
+        log_decision_summaries(decisions_data, portfolio_overview, watchlist_overview)
 
     if len(decisions_data) == 0:
         logger.info("No decisions to execute")
