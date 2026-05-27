@@ -323,15 +323,19 @@ docker build -t robinhood-ai-trading-bot:latest .
 
 Run with `docker run` (demo mode):
 ```sh
+mkdir -p .tokens
 docker run --rm -it \
+    -v "$PWD/.tokens:/root/.tokens" \
     -v "$PWD/config.py:/app/config.py:ro" \
     robinhood-ai-trading-bot:latest
 ```
 
 Run with `docker run` (auto mode):
 ```sh
+mkdir -p .tokens
 docker run --rm -it \
     -e AUTO_MODE_CONFIRM=yes \
+    -v "$PWD/.tokens:/root/.tokens" \
     -v "$PWD/config.py:/app/config.py:ro" \
     robinhood-ai-trading-bot:latest
 ```
@@ -346,6 +350,10 @@ For auto mode with Docker Compose, set this in `docker-compose.yml`:
 environment:
     AUTO_MODE_CONFIRM: "yes"
 ```
+
+Auth session persistence:
+- Docker Compose uses a bind mount `./.tokens:/root/.tokens` to preserve Robinhood session data between restarts.
+- For plain `docker run`, include `-v "$PWD/.tokens:/root/.tokens"` as shown above.
 
 ## ⚠️ Disclaimer
 Please note: This bot is designed solely for educational purposes.

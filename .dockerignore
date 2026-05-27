@@ -11,3 +11,4 @@ LICENSE
 config.py
 config.py.*
 !config.py.example
+.tokens/

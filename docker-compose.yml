@@ -9,5 +9,6 @@ services:
       AUTO_MODE_CONFIRM: "no"
     volumes:
       - ./config.py:/app/config.py:ro
+      - ./.tokens:/root/.tokens
     stdin_open: true
     tty: true
