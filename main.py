@@ -455,9 +455,10 @@ async def main():
 
 # Run the main function
 if __name__ == '__main__':
-    confirm = input(f"Are you sure you want to run the bot in {MODE} mode? (yes/no): ")
-    if confirm.lower() != "yes":
-        logger.warning("Exiting the bot...")
-        exit()
+    if MODE != "demo":
+        confirm = input(f"Are you sure you want to run the bot in {MODE} mode? (yes/no): ")
+        if confirm.lower() != "yes":
+            logger.warning("Exiting the bot...")
+            exit()
     asyncio.run(main())
 
